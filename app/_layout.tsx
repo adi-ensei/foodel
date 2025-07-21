@@ -1,7 +1,7 @@
+import useAuthStore from "@/store/auth.store";
 import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
-import { View } from "react-native";
 import "./global.css";
 
 export default function RootLayout() {
@@ -12,15 +12,17 @@ export default function RootLayout() {
     "QuickSand-SemiBold": require("../assets/fonts/Quicksand-SemiBold.ttf"),
     "QuickSand-Light": require("../assets/fonts/Quicksand-Light.ttf"),
   });
-
+  const { isLoading, fetchAuthenticatedUser } = useAuthStore();
   useEffect(() => {
     if (error) throw error;
     if (fontsLoaded) SplashScreen.hideAsync();
   }, [fontsLoaded, error]);
 
-  if (!fontsLoaded) {
-    return <View style={{ flex: 1 }} />;
-  }
+  useEffect(() => {
+    fetchAuthenticatedUser();
+  }, []);
+
+  if (!fontsLoaded || isLoading) return null;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

@@ -50,27 +50,45 @@ async function clearAll(collectionId: string): Promise<void> {
   );
 }
 
-async function uploadImageToCloudinary(imageUrl: string): Promise<string> {
-  const formData = new FormData();
+export async function uploadImageToCloudinary(
+  imageUrl: string
+): Promise<string> {
+  try {
+    const imageRes = await fetch(imageUrl);
+    const blob = await imageRes.blob();
 
-  formData.append("file", imageUrl);
-  formData.append("upload_preset", uploadPreset || "");
+    const formData = new FormData();
+    formData.append("file", {
+      uri: imageUrl,
+      name: "image.jpg",
+      type: "image/jpeg",
+    } as any); // 👈 for React Native
+    formData.append("upload_preset", uploadPreset);
 
-  const res = await fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-    {
-      method: "POST",
-      body: formData,
+    const response = await fetch(
+      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+      {
+        method: "POST",
+        body: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("❌ Cloudinary upload failed", text);
+      throw new Error("Cloudinary upload failed");
     }
-  );
 
-  if (!res.ok) {
-    console.error("Cloudinary upload failed", await res.text());
-    throw new Error("Cloudinary upload failed");
+    const data = await response.json();
+    console.log("✅ Cloudinary uploaded:", data.secure_url);
+    return data.secure_url;
+  } catch (error) {
+    console.error("❌ Upload error:", error);
+    return "https://via.placeholder.com/300x200?text=Upload+Failed";
   }
-
-  const data = await res.json();
-  return data.secure_url;
 }
 
 async function seed(): Promise<void> {
